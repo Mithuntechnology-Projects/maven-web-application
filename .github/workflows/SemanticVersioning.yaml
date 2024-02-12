@@ -3,9 +3,8 @@ name: Semantic Versioning and Docker Build/Push
 on:
   push:
     branches:
-      - development
-      - stage
-      - main
+      - 'development'
+
 jobs:
   version_and_docker:
     runs-on: ubuntu-latest
@@ -18,27 +17,14 @@ jobs:
       run: |
         sudo npm install -g semver
       
-    - name: Set up Java
-      uses: actions/setup-java@v2
-      with:
-        java-version: '11'
-        distribution: 'adopt'
-        cache: maven
-      
-    - name: Extract version from tag
+    - name: Extract version from branch name
       id: extract_version
-      run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+      run: echo ::set-output name=version::${GITHUB_REF#refs/heads/}
       
     - name: Determine version increment
       id: determine_version_increment
       run: |
-        if [[ $GITHUB_REF =~ ^refs/heads/dev ]]; then
-          echo "::set-output name=increment::patch"
-        elif [[ $GITHUB_REF =~ ^refs/heads/stage ]]; then
-          echo "::set-output name=increment::minor"
-        elif [[ $GITHUB_REF =~ ^refs/heads/main ]]; then
-          echo "::set-output name=increment::major"
-        fi
+        echo "::set-output name=increment::patch"
     
     - name: Increment version
       id: increment_version
@@ -48,17 +34,4 @@ jobs:
         new_version=$(semver bump $increment $version)
         echo "::set-output name=new_version::$new_version"
       
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
-      
-    - name: Build Docker image
-      run: docker build -t prasad522/mavenwebapp:${{ steps.increment_version.outputs.new_version }} .
-      
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        
-    - name: Push Docker image
-      run: docker push prasad522/mavenwebapp:${{ steps.increment_version.outputs.new_version }}
+    # Rest of your steps...
